@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="/static/style.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BD_work</title>
+</head>
+<body>
+    <header>
+        <h1>
+            Создание таблицы для нового устройства
+        </h1>
+    </header>
+    <main>
+        <form action="/" method="get" target=_self>
+            <input type="submit" class="input_button" value="Вернуться на главную страницу">     
+        </form> 
+        <h3>Добавить новое устройство</h3>
+            <label for="name">Введите имя устройства(оно же будет именем таблицы)</label>
+            <p></p>
+            <input name="name" id="name" value="Введите имя">
+            <p></p>
+            <label for="prefix">Введите префикс, который будет использоваться для генерации кодов этих устройств</label>
+            <p></p>
+            <input name="prefix" id="prefix" value="Введите префикс">
+            <p></p>
+            <button onclick="send()" >Создать выбранную таблицу</button>   
+    </main>
+<script>
+    async function send(){
+        const name = document.getElementById("name").value;
+        const prefix = document.getElementById("prefix").value;
+        // отправляем запрос
+        const response = await fetch("/create_table", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    name: name,
+                    prefix: prefix
+                })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                alert(data.message)
+
+            }
+            else
+                console.log(response);
+    }
+</script>
+</body>
+</html>

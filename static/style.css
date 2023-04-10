@@ -1,0 +1,124 @@
+body{
+  background-image: url("images/inmys.jpg");
+  background-position: top right;
+  background-repeat: no-repeat;
+  background-size: 200px,200px;
+
+}
+
+table{
+    margin: 40px 0;
+    table-layout: fixed;
+    width: 50%;
+    border: 1px solid;
+  }
+
+
+thead {
+    background-color:#07759a;
+    color: white;
+}
+
+h1{
+  font-weight: normal;
+
+}
+
+th{
+  font-weight: normal;
+  border: 1px solid;
+}
+
+
+td {
+  font-weight: normal;  
+  word-wrap:break-word;
+  border: 1px solid;
+}
+
+button {
+    border-color: #07759a;
+    border-radius: 0;
+    color: #07759a;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    -webkit-transition: color 150ms ease-in-out;
+    transition: color 150ms ease-in-out;
+  }
+  button:after {
+    content: '';
+    position: absolute;
+    display: block;
+    top: 0;
+    left: 50%;
+    -webkit-transform: translateX(-50%);
+            transform: translateX(-50%);
+    width: 0;
+    height: 100%;
+    background: #07759a;
+    z-index: -1;
+    -webkit-transition: width 150ms ease-in-out;
+    transition: width 150ms ease-in-out;
+  }
+  button:hover {
+    color: #fff;
+  }
+  button:hover:after {
+    width: 110%;
+  }
+
+  
+  
+  
+  
+  
+  
+  
+  .input_button {
+    border-color: #07759a;
+    border-radius: 0;
+    color: #07759a;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    -webkit-transition: color 150ms ease-in-out;
+    transition: color 150ms ease-in-out;
+  }
+  .input_button:after {
+    content:'';
+    position: absolute;
+    display: block;
+    top: 0;
+    left: 50%;
+    -webkit-transform: translateX(-50%);
+            transform: translateX(-50%);
+    width: 0;
+    height: 100%;
+    background: #07759a;
+    z-index: -1;
+    -webkit-transition: width 150ms ease-in-out;
+    transition: width 150ms ease-in-out;
+  }
+  .input_button:hover {
+    color: #fff;
+  }
+  .input_button:hover:after {
+    width: 110%;
+  }
+
+
+.text-red{
+    border-color: black;
+    background-color: white;
+    color: red;
+}
+
+
+
+.text-green
+{
+    border-color: black;
+    background-color: white;
+    color: green;
+}
