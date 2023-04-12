@@ -4,6 +4,7 @@ import configparser
 import sys
 import re
 import os
+import pandas
 """
 printed:
 0- Созданы, не выданы
@@ -25,102 +26,79 @@ try:
 except:
     pass
 
+  
 
-   
-def create_table(name:str,code_prefix:str):
-    """
-    Функция, создающая таблицу по запросу для нового устройства
 
-    Если все хорошо возвращает true, иначе false
+
+def insert_codes_in_bd(data:bytes):
     """
-    first_string=(name,code_prefix+"_1",0)
-    query_create=f"\
-        CREATE TABLE {name} \
-        (\
-        Id SERIAL PRIMARY KEY,\
-        device_name CHARACTER VARYING(50),\
-        unique_code CHARACTER VARYING(50),\
-        printed INTEGER\
-        );"
-    
-    query_insert_first=f"\
-        INSERT INTO {name}\
-        (device_name,unique_code,printed)\
-        VALUES(%s,%s,%s)"
+    функция для вставки новых паспортов в базу
+
+    @аргументы:
+    data-байты, полученные из эксель файла для дальнейшего перевода в нормальный вид и загрузку в бд
+    return:
+    True-если все успешно
+    False-если ошибка
+    """
+    query_insert_code=f"Insert into passports \
+            (name,serial,mac_address,printed)\
+            Values (%s,%s,%s,%s)"
+    query_check_codes=f"SELECT name,serial,mac_address,printed\
+        FROM passports \
+        WHERE name=%s and serial=%s and mac_address=%s and printed=%s\
+        "
+    df=pandas.read_excel(data)
     conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
     cursor=conn.cursor()
-    try:
-        cursor.execute(query_create)
-    except:
-        return False
-    cursor.execute(query_insert_first,first_string)
+    for i, row in df.iterrows():
+        entry=(str(row[0]),str(row[1]),str(row[2]),row[3])
+        cursor.execute(query_check_codes,entry)
+        if len(cursor.fetchall())!=0:
+            return False
+        cursor.execute(query_insert_code,entry)
     conn.commit()
     cursor.close()
     conn.close()
-    return True  
+    return True
+     
 
-def generate_free_codes(name:str,count:int):
-    """
-    Функция, добавляющая n-е количество незанятых кодов
 
-    в БД в выбранную таблицу(printed=0)
-    """
-    query_get_last_row=f"SELECT * \
-    FROM {name} \
-        ORDER BY id DESC, \
-        id DESC \
-        LIMIT 1;"
-    query_insert_new_code=f"\
-        INSERT INTO {name}\
-        (device_name,unique_code,printed)\
-        VALUES(%s,%s,%s)"
-    conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
-    cursor=conn.cursor()
-    cursor.execute(query_get_last_row)
-    last_row=cursor.fetchone()
-    last_row_device=last_row[1]
-    last_row_code=last_row[2]
-    last_row_code_splitted=last_row_code.split("_")
-    last_row_code_prefix=last_row_code_splitted[0]
-    last_row_code_number=int(last_row_code_splitted[1])
-    for i in range(1,count+1):
-        current_code_number=str(last_row_code_number+i)
-        target_insert=(name,last_row_code_prefix+"_"+current_code_number,0)
-        cursor.execute(query_insert_new_code,target_insert)
-    conn.commit()
-    cursor.close()
-    conn.close()     
-
-def get_free_codes(name:str,count:int):
+def get_free_codes(count:int):
     """
     Функция для выдачи n-го количества ещё не занятых кодов
     
     из выбранной таблицы и помечает их как выданные(printed=1)
     """
-    query_select_codes=f"SELECT id,device_name,unique_code\
-        FROM {name} \
+    query_select_codes=f"SELECT name,serial,mac_address\
+        FROM passports \
         WHERE printed=0 \
         LIMIT {count}"
-    query_mark_gived=f"Update {name} \
+    query_mark_gived=f"Update passports \
         SET printed=1\
-        WHERE id=%s \
-        AND device_name=%s\
-        AND unique_code=%s"
+        WHERE name=%s\
+        AND serial=%s\
+        AND mac_address=%s"
     conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
     cursor=conn.cursor()
     cursor.execute(query_select_codes)
     result_turple=cursor.fetchall()
     if len(result_turple)!=count:
-        error=1
-        print("В таблице нет столько свободных кодов")
-        return error
+        return False
     for res in result_turple:
+        print(res)
         cursor.execute(query_mark_gived,res)
     conn.commit()
     cursor.close()
     conn.close()
     return result_turple
 
-
-if __name__=="__main__":
-    zero=0
+def get_all_passports():
+    """
+    Функция, которая всю таблицу паспортов кортежем из строк
+    """
+    query_get_all_codes=f"SELECT * FROM passports"
+    conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
+    cursor=conn.cursor()
+    cursor.execute(query_get_all_codes)
+    data=cursor.fetchall()
+    return data
