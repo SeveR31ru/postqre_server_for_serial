@@ -16,19 +16,17 @@
     <form action="/" method="get" target=_self>
         <input type="submit" class="input_button" value="Вернуться на главную страницу">     
     </form> 
-    <h3>Изменить префикс и описание имеющихся устройств</h3>
+    <h3>Создать новое устройство</h3>
     <h5>
         <p>Создать новое устройство и сделать его первый код в базе с номером "префикс_1" </p>
     </h5>
-    <form action="/create_device" method="post" >
-        <input type="text" placeholder="Введите название нашего устройства"name=device required size="30" >
+        <input type="text" id=create_device placeholder="Введите название нашего устройства" required size="30" >
         <p></p>
-        <input type="text" id="prefix" placeholder="выберите префикс"required maxlength="4" size="15">
+        <input type="text" id="create_prefix" placeholder="выберите префикс"required maxlength="4" size="15">
         <p></p>
-        <input type="text",id="description" placeholder="выберите описание"required maxlength="4" size="15">
+        <input type="text"id="create_description" placeholder="выберите описание" size="15">
         <p></p>
-        <input type="submit" class="input_button" value="Изменить префикс и описание данного устройства в бд">     
-    </form>
+        <button onclick="send('create')">Создать</button>        
     <p></p>
     
     <h3>Изменить префикс и описание имеющихся устройств</h3>
@@ -36,8 +34,7 @@
         <p>Выберите устройство, которое хотите изменить. </p>
         <p>Если вы желаете изменить только один параметр-оставьте второе поле пустым</p>
     </h5>
-    <form action="/change_device" method="post" >
-        <input list="device_list" placeholder="Выберите имеющееся устройство"name=device required size="30" >
+        <input list="device_list" name="change_device" placeholder="Выберите имеющееся устройство"name=change_device required size="30" >
         <datalist id="device_list">
             <option value="">Выберите устройство, которому хотите изменить префикс(не больше 4 символов) и описание</option>
             {% for device in device_list %}
@@ -45,12 +42,46 @@
             {% endfor %}
         </datalist>
         <p></p>
-        <input type="text" id="prefix" placeholder="выберите префикс"required maxlength="4" size="15">
+        <input type="text" id="change_prefix" placeholder="выберите префикс"required maxlength="4" size="15">
         <p></p>
-        <input type="text",id="description" placeholder="выберите описание"required maxlength="4" size="15">
+        <input type="text",id="change_description" placeholder="выберите описание"required maxlength="4" size="15">
         <p></p>
-        <input type="submit" class="input_button" value="Изменить префикс и описание данного устройства в бд">     
-    </form>
+        <button onclick="send('change')">Изменить устройство</button>     
     <p></p>
+    
+    <h3>Системные сообщения</h3>
+    <div id="message"></div>
+        
+<script>
+        async function send(choosed_func)
+        {   
+            const device=document.getElementById(choosed_func+"_device").value;
+            const prefix=document.getElementById(choosed_func+"_prefix").value;
+            const description=document.getElementById(choosed_func+"_description").value;
+            const response = await fetch("/"+choosed_func+"_device", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    device: device,
+                    prefix: prefix,
+                    description:description,
+                })
+            });
+            if (response.ok) {
+                const ans_data=await response.json()
+                document.getElementById("message").textContent = ans_data.message;
+                         
+            }
+            else
+                console.log(response);
+            
+            
+        }
+
+
+
+</script>
+
+
 </body>
 </html>

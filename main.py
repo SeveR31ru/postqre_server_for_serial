@@ -3,12 +3,18 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import FileResponse,HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
+from pydantic import BaseModel
 import uvicorn
 import configparser
 import os
 import database
 import pandas
+import json
 
+class Device(BaseModel):
+    name:str
+    prefix:str|None=None
+    description:str|None=None
 try:
     # получение конфигов
     config = configparser.ConfigParser()
@@ -57,30 +63,32 @@ def get_table_of_passports():
 #post-запросы
 
 @app.post("/create_device")
-def create_device(device:str,prefix:str=None,description:str=None):
-    html=env.get_template("answer.html")
+async def create_device(data=Body()):
+    print(data)
+    device=data["device"]
+    prefix=data["prefix"]
+    description=data["description"]
     if not prefix:
-        text=database.create_device(device,description)
+        text=database.create_device(device=device,description=description)
     elif not description:
-        text=database.create_device(device,prefix)
+        text=database.create_device(device=device,prefix=prefix)
     else:
-        text=database.create_device(device,prefix,description)
-    html=html.render(text=text)
-    return HTMLResponse(html)
+        text=database.create_device(device=device,description=description,prefix=prefix)
+    return {"message": text}
 
 
 @app.post("/change_device")
-def change_device(device:str,prefix:str=None,description:str=None):
-    html=env.get_template("answer.html")
-    
+def change_device(data=Body()):
+    device=str(data["device"])
+    prefix=str(data["prefix"])
+    description=str(data["description"])
     if not prefix:
-        text=database.change_device(device,description)
+        text=database.change_device(device=device,description=description)
     elif not description:
-        text=database.change_device(device,prefix)
+        text=database.change_device(device=device,prefix=prefix)
     else:
-        text=database.change_device(device,prefix,description)
-    html=html.render(text=text)
-    return HTMLResponse(html)
+        text=database.change_device(device=device,description=description,prefix=prefix)
+    return {"message": text}
     
 
 

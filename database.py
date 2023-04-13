@@ -65,12 +65,12 @@ def insert_codes_in_bd(data:bytes):
      
 
 
-def create_device(device:str,prefix:str=None,description:str=None):
+def create_device(device:str,description:str=None,prefix:str=None):
     """
     Функция создания нового девайса. Первое созданное новое устройство будет вставлено в таблицу автоматически
     device-название девайса
-    prefix- префикс
-    description-описание
+    description- описание
+    prefix-префикс
     str-строка ошибки либо строка успеха операции
     """
     query_create_device_full=f"Insert into prefixes  \
@@ -85,27 +85,46 @@ def create_device(device:str,prefix:str=None,description:str=None):
     query_create_first_code=f"Insert into passports  \
             (name,serial,printed)\
             Values (%s,%s,%s)"
+    query_check_device=f"SELECT name\
+        FROM prefixes \
+        WHERE name=%s \
+            "
+    query_check_prefix=f"SELECT prefix\
+        FROM prefixes \
+        WHERE prefix=%s \
+            "
+
     try:
         conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
         cursor=conn.cursor()
     except:
         return "Не удалось подключиться к базе"
+    data=[device]
+    cursor.execute(query_check_device,data)
+    if len(cursor.fetchall())!=0:
+            return "Девайс с таким именем уже имеется. Отмена операции"
+    data=[prefix]
+    cursor.execute(query_check_prefix,data)
+    if len(cursor.fetchall())!=0:
+            return "Девайс с таким префиксом уже имеется. Отмена операции"
+    
     if prefix is None:
-        selected_query=query_change_device_description
-        data=(name,description)
+        selected_query=query_create_device_description
+        data=[device,description]
     elif description is None:
-        selected_query=query_change_device_prefix
-        data=(name,prefix)
+        selected_query=query_create_device_prefix
+        data=[device,prefix]
     else:
-        selected_query=query_change_device_full
-        data=(name,prefix,description)
+        selected_query=query_create_device_full
+        data=[device,description,prefix]
+    
     try:
         cursor.execute(selected_query,data)
     except:
         return "Непредвиденная ошибка во время создания записи в таблице префиксов, отмена операции"
     
     try:
-        code_data=(name,prefix+"_1",0)
+        code_data=[device,prefix+"_1",'0']
         cursor.execute(query_create_first_code,code_data)
     except:
         return "Непредвиденная ошибка при создании первого кода, отмена операции"
@@ -178,31 +197,34 @@ def generate_free_codes(name:str,count:int):
         LIMIT 1;"
     query_insert_new_code=f"\
         INSERT INTO {name}\
-        (device_name,unique_code,printed)\
+        (name,serial,printed)\
         VALUES(%s,%s,%s)"
-    conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
-    cursor=conn.cursor()
-    cursor.execute(query_get_last_row)
+    try:
+        conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
+        cursor=conn.cursor()
+    except:
+        return "Не удалось подключиться к базе"
+    try:
+        cursor.execute(query_get_last_row)
+    except:
+        return "Не удалось получить последний имеющийся код устройства"    
     last_row=cursor.fetchone()
     last_row_device=last_row[1]
     last_row_code=last_row[2]
     last_row_code_splitted=last_row_code.split("_")
     last_row_code_prefix=last_row_code_splitted[0]
     last_row_code_number=int(last_row_code_splitted[1])
-    for i in range(1,count+1):
-        current_code_number=str(last_row_code_number+i)
-        target_insert=(name,last_row_code_prefix+"_"+current_code_number,0)
-        cursor.execute(query_insert_new_code,target_insert)
+    try:
+        for i in range(1,count+1):
+            current_code_number=str(last_row_code_number+i)
+            target_insert=(name,last_row_code_prefix+"_"+current_code_number,0)
+            cursor.execute(query_insert_new_code,target_insert)
+    except:
+        return "Ошибка во время вставки новых кодов"
     conn.commit()
     cursor.close()
     conn.close()     
-
-
-
-
-
-
-
+    return f"Для устройства {name} успешно создано {count} кодов"
 
 def get_all_passports():
     """
