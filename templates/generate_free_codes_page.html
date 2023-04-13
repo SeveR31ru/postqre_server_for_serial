@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="/static/style.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insert_page</title>
+</head>
+<body>
+    <header>
+        <h1>
+           Работа с кодами наших устройств в бд
+        </h1>
+    </header>
+    <form action="/" method="get" target=_self>
+        <input type="submit" class="input_button" value="Вернуться на главную страницу">     
+    </form> 
+    <h3>Изменить префикс и описание имеющихся устройств</h3>
+    <h5>
+        <p>Создать новое устройство и сделать его первый код в базе с номером "префикс_1" </p>
+    </h5>
+    <form action="/create_device" method="post" >
+        <input type="text" placeholder="Введите название нашего устройства"name=device required size="30" >
+        <p></p>
+        <input type="text" id="prefix" placeholder="выберите префикс"required maxlength="4" size="15">
+        <p></p>
+        <input type="text",id="description" placeholder="выберите описание"required maxlength="4" size="15">
+        <p></p>
+        <input type="submit" class="input_button" value="Изменить префикс и описание данного устройства в бд">     
+    </form>
+    <p></p>
+    
+    <h3>Изменить префикс и описание имеющихся устройств</h3>
+    <h5>
+        <p>Выберите устройство, которое хотите изменить. </p>
+        <p>Если вы желаете изменить только один параметр-оставьте второе поле пустым</p>
+    </h5>
+    <form action="/change_device" method="post" >
+        <input list="device_list" placeholder="Выберите имеющееся устройство"name=device required size="30" >
+        <datalist id="device_list">
+            <option value="">Выберите устройство, которому хотите изменить префикс(не больше 4 символов) и описание</option>
+            {% for device in device_list %}
+            <option value="{{code}}"></option>
+            {% endfor %}
+        </datalist>
+        <p></p>
+        <input type="text" id="prefix" placeholder="выберите префикс"required maxlength="4" size="15">
+        <p></p>
+        <input type="text",id="description" placeholder="выберите описание"required maxlength="4" size="15">
+        <p></p>
+        <input type="submit" class="input_button" value="Изменить префикс и описание данного устройства в бд">     
+    </form>
+    <p></p>
+</body>
+</html>

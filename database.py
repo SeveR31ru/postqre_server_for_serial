@@ -26,9 +26,6 @@ try:
 except:
     pass
 
-  
-
-
 
 def insert_codes_in_bd(data:bytes):
     """
@@ -37,8 +34,7 @@ def insert_codes_in_bd(data:bytes):
     @аргументы:
     data-байты, полученные из эксель файла для дальнейшего перевода в нормальный вид и загрузку в бд
     return:
-    True-если все успешно
-    False-если ошибка
+    str-письменный ответ на запрос
     """
     query_insert_code=f"Insert into passports \
             (name,serial,mac_address,printed)\
@@ -47,50 +43,166 @@ def insert_codes_in_bd(data:bytes):
         FROM passports \
         WHERE name=%s and serial=%s and mac_address=%s and printed=%s\
         "
-    df=pandas.read_excel(data)
-    conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
-    cursor=conn.cursor()
+    try:
+        df=pandas.read_excel(data)
+    except:
+        return "Ошибка чтения таблицы"
+    try:
+        conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
+        cursor=conn.cursor()
+    except:
+        return "Не удалось подключиться к базе"
     for i, row in df.iterrows():
         entry=(str(row[0]),str(row[1]),str(row[2]),row[3])
         cursor.execute(query_check_codes,entry)
         if len(cursor.fetchall())!=0:
-            return False
+            return "Обнаружена коллизия кодов. Код из введенной таблицы уже имеется в таблице. Отмена операции"
         cursor.execute(query_insert_code,entry)
     conn.commit()
     cursor.close()
     conn.close()
-    return True
+    return "Паспорта успешно добавлены в таблицу"
      
 
 
-def get_free_codes(count:int):
+def create_device(device:str,prefix:str=None,description:str=None):
     """
-    Функция для выдачи n-го количества ещё не занятых кодов
+    Функция создания нового девайса. Первое созданное новое устройство будет вставлено в таблицу автоматически
+    device-название девайса
+    prefix- префикс
+    description-описание
+    str-строка ошибки либо строка успеха операции
+    """
+    query_create_device_full=f"Insert into prefixes  \
+            (name,description,prefix)\
+            Values (%s,%s,%s)"
+    query_create_device_prefix=f"Insert into prefixes  \
+            (name,description,prefix)\
+            Values (%s,%s,%s)"
+    query_create_device_description=f"Insert into prefixes  \
+            (name,description,prefix)\
+            Values (%s,%s,%s)"
+    query_create_first_code=f"Insert into passports  \
+            (name,serial,printed)\
+            Values (%s,%s,%s)"
+    try:
+        conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
+        cursor=conn.cursor()
+    except:
+        return "Не удалось подключиться к базе"
+    if prefix is None:
+        selected_query=query_change_device_description
+        data=(name,description)
+    elif description is None:
+        selected_query=query_change_device_prefix
+        data=(name,prefix)
+    else:
+        selected_query=query_change_device_full
+        data=(name,prefix,description)
+    try:
+        cursor.execute(selected_query,data)
+    except:
+        return "Непредвиденная ошибка во время создания записи в таблице префиксов, отмена операции"
     
-    из выбранной таблицы и помечает их как выданные(printed=1)
-    """
-    query_select_codes=f"SELECT name,serial,mac_address\
-        FROM passports \
-        WHERE printed=0 \
-        LIMIT {count}"
-    query_mark_gived=f"Update passports \
-        SET printed=1\
-        WHERE name=%s\
-        AND serial=%s\
-        AND mac_address=%s"
-    conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
-    cursor=conn.cursor()
-    cursor.execute(query_select_codes)
-    result_turple=cursor.fetchall()
-    if len(result_turple)!=count:
-        return False
-    for res in result_turple:
-        print(res)
-        cursor.execute(query_mark_gived,res)
+    try:
+        code_data=(name,prefix+"_1",0)
+        cursor.execute(query_create_first_code,code_data)
+    except:
+        return "Непредвиденная ошибка при создании первого кода, отмена операции"
     conn.commit()
     cursor.close()
     conn.close()
-    return result_turple
+    return f"Устройство с именем {device} \n \
+        префиксом : {prefix}\n \
+        описанием: {description} \n \
+        успешно создано и первый код сгенерирован"
+
+
+
+
+
+def change_device(device:str,prefix:str=None,description:str=None):
+    """
+    Функция изменения описания и префикса имеющегося девайса
+    аргументы:
+    device-название девайса
+    prefix-желаемый префикс
+    description-желаемое описание
+    @return:
+    str-строка ошибки либо строка успеха операции
+    """
+    query_change_device_full=f"Insert into prefixes  \
+            (name,description,prefix)\
+            Values (%s,%s,%s)"
+    query_change_device_prefix=f"Insert into prefixes  \
+            (name,description,prefix)\
+            Values (%s,%s,%s)"
+    query_change_device_description=f"Insert into prefixes  \
+            (name,description,prefix)\
+            Values (%s,%s,%s)"
+    try:
+        conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
+        cursor=conn.cursor()
+    except:
+        return "Не удалось подключиться к базе"
+    if prefix is None:
+        query=query_change_device_description
+        data=(name,description)
+    elif description is None:
+        query=query_change_device_prefix
+        data=(name,prefix)
+    else:
+        query=query_change_device_full
+        data=(name,prefix,description)
+    try:
+        cursor.execute(query,data)
+    except:
+        return "Непредвиденная ошибка во время изменения, отмена операции"
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return f"Девайс с именем {name} успешно изменен /n \
+        Префикс изменен на: {prefix}\
+        Описание изменено на: {description}"
+
+     
+def generate_free_codes(name:str,count:int):
+    """
+    Функция, добавляющая n-е количество незанятых кодов
+    в БД в выбранную таблицу(printed=0)
+    """
+    query_get_last_row=f"SELECT * \
+    FROM {name} \
+        ORDER BY id DESC, \
+        id DESC \
+        LIMIT 1;"
+    query_insert_new_code=f"\
+        INSERT INTO {name}\
+        (device_name,unique_code,printed)\
+        VALUES(%s,%s,%s)"
+    conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
+    cursor=conn.cursor()
+    cursor.execute(query_get_last_row)
+    last_row=cursor.fetchone()
+    last_row_device=last_row[1]
+    last_row_code=last_row[2]
+    last_row_code_splitted=last_row_code.split("_")
+    last_row_code_prefix=last_row_code_splitted[0]
+    last_row_code_number=int(last_row_code_splitted[1])
+    for i in range(1,count+1):
+        current_code_number=str(last_row_code_number+i)
+        target_insert=(name,last_row_code_prefix+"_"+current_code_number,0)
+        cursor.execute(query_insert_new_code,target_insert)
+    conn.commit()
+    cursor.close()
+    conn.close()     
+
+
+
+
+
+
+
 
 def get_all_passports():
     """

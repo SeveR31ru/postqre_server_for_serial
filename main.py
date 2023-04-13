@@ -27,6 +27,8 @@ env=Environment(loader=FileSystemLoader('templates'))
 
 #get-запросы
 
+
+#запросы по открытию страниц меню
 @app.get("/")
 def main_page():
     html=env.get_template("main.html")
@@ -38,9 +40,9 @@ def insert_page():
     html=html.render()
     return HTMLResponse(html)
 
-@app.get("/get_free_codes_page")
+@app.get("/generate_free_codes_page")
 def get_page():
-    html=env.get_template("get_codes_page.html")
+    html=env.get_template("generate_free_codes_page.html")
     html=html.render()
     return HTMLResponse(html)
 
@@ -52,29 +54,43 @@ def get_table_of_passports():
     return HTMLResponse(html)
 
 
-
 #post-запросы
+
+@app.post("/create_device")
+def create_device(device:str,prefix:str=None,description:str=None):
+    html=env.get_template("answer.html")
+    if not prefix:
+        text=database.create_device(device,description)
+    elif not description:
+        text=database.create_device(device,prefix)
+    else:
+        text=database.create_device(device,prefix,description)
+    html=html.render(text=text)
+    return HTMLResponse(html)
+
+
+@app.post("/change_device")
+def change_device(device:str,prefix:str=None,description:str=None):
+    html=env.get_template("answer.html")
+    
+    if not prefix:
+        text=database.change_device(device,description)
+    elif not description:
+        text=database.change_device(device,prefix)
+    else:
+        text=database.change_device(device,prefix,description)
+    html=html.render(text=text)
+    return HTMLResponse(html)
+    
 
 
 @app.post("/insert_new_codes_excel")
 async def  insert_new_codes(file: UploadFile):
     data=file.file.read()
     html=env.get_template("answer.html")
-    if(database.insert_codes_in_bd(data)):
-        text="Паспорта успешно добавлены в таблицу"
-    else:
-        text="Ошибка во время добавления паспортов. Возможно, вы пытаетесь добавить уже имеющиеся паспорта\
-        ,к базе нет подключения сейчас или случилась иная непредвиденная ошибка"
+    text=database.insert_codes_in_bd(data)
     html=html.render(text=text)
     return HTMLResponse(html)
-
-
-@app.post("/give_free_codes_excel")
-def give_free_codes_excel(count:int):
-    data=database.get_free_codes(count)
-    result = pandas.DataFrame(data, columns=['Наименование'	,'Серийный номер','MAC-адрес'])
-    output=result.to_excel(f"Свободные_коды_в_количестве_{count}.xlsx",index=False,)
-    return FileResponse(path=f"Свободные_коды_в_количестве_{count}.xlsx", media_type='application/octet-stream', filename=f"Свободные_коды_в_количестве_{count}.xlsx")
 
 
 
