@@ -231,7 +231,7 @@ def get_all_passports():
     """
     Функция, которая всю таблицу паспортов кортежем из строк
     """
-    query_get_all_passports=f"SELECT * FROM passports"
+    query_get_all_passports=f"SELECT * FROM passports ORDER BY id ASC "
     conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
     cursor=conn.cursor()
     cursor.execute(query_get_all_passports)
@@ -243,15 +243,40 @@ def get_all_templates_names():
     Функция,возвращающая все имена шаблонов устройств
     
     """
-    query_get_names=f"SELECT name FROM prefixes"
-    conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
-    cursor=conn.cursor()
+    query_get_names=f"SELECT name FROM prefixes "
+    try:
+        conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
+        cursor=conn.cursor()
+    except:
+        return "Не удалось подключиться к базе"
     cursor.execute(query_get_names)
     data=cursor.fetchall()
     result=[]
     for row in data:
         result.append(row[0])
     return result
+
+def change_device(name:str,serial:str,status:int):
+    query_change_status=f"UPDATE passports \
+        SET printed=%s \
+        WHERE name=%s and serial=%s"
+    try:
+        conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
+        cursor=conn.cursor()
+    except:
+        return "Не удалось подключиться к базе"
+    cursor=conn.cursor()
+    data=(status,name,serial)
+    print(data)
+    try:
+        cursor.execute(query_change_status,data)
+    except:
+        return "Непредвиденная ошибка во время обновления статуса"
+    conn.commit()
+    cursor.close()
+    conn.close() 
+    return f"Статус устройства {name} с серийным номером {serial} успешно сменён на {status}"
+    
 
 
 

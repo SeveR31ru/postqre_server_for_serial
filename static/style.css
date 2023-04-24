@@ -122,12 +122,3 @@ button {
     background-color: white;
     color: green;
 }
-
-
-.scroll-table-body {
-	height: 100px;
-	overflow-x: auto;
-	margin-top: 0px;
-	margin-bottom: 20px;
-	border-bottom: 1px solid #eee;
-}

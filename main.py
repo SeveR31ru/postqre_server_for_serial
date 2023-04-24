@@ -105,6 +105,14 @@ async def generate_codes(data=Body()):
         return {"message":"Введите количество кодов"}
     text=database.generate_free_codes(template, int(count))
     return  {"message": text}
+
+@app.post("/change_status_single")
+async def change_status(data=Body()):
+    name=data["name"]
+    serial=data["serial"]
+    new_status=int(data["status"])
+    text=database.change_device(name,serial,new_status)
+    return {"message":text}
     
 
 

@@ -13,6 +13,9 @@
     </form>
     <p></p>
     <table  table class="table_sort">
+        <h3>Системные сообщения</h3>
+        <div id="message"></div>
+        <p></p>
         <caption>Таблица всех паспортов(сортируется при нажатии на название столбца)</caption>
         <thead>
                 <tr>
@@ -21,10 +24,12 @@
                 <th>Серийный номер </th>
                 <th>Мак-адрес</th>
                 <th>Статус печати(0-не присвоен,1-напечатан,2-подтвержден)</th>
+                <th>Проставить 0 данному устройству</th>
+                <th>Проставить 1 данному устройству</th>
+                <th>Проставить 2 данному устройству</th>
                 </tr>
         </thead>
         <tbody>
-            <div class="scroll-table-body">
             {% for passport in passports %}
             <tr>
                 <th>{{passport[0]}}</th>
@@ -32,9 +37,12 @@
                 <th>{{passport[2]}}</th>
                 <th>{{passport[3]}}</th>
                 <th>{{passport[4]}}</th>
+                <th><button onclick="change_status('{{passport[1]}}','{{passport[2]}}',0)">Изменить на 0</button></th>
+                <th><button onclick="change_status('{{passport[1]}}','{{passport[2]}}',1)">Изменить на 1</button></th>
+                <th><button onclick="change_status('{{passport[1]}}','{{passport[2]}}',2)">Изменить на 2</button></th>
+                
             </tr>
             {% endfor %}
-            </div>
         </tbody>
             </div>
         </table> 
@@ -59,5 +67,30 @@
         document.querySelectorAll('.table_sort thead').forEach(tableTH => tableTH.addEventListener('click', () => getSort(event)));
         });
     </script>
+
+<script>
+    async function change_status(name,serial,status)
+    {
+        const response = await fetch("/change_status_single", {
+            method: "POST",
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                name: name,
+                serial:serial,
+                status:status
+            })
+        });
+        if (response.ok) {
+            const ans_data=await response.json();
+            location.reload();  
+            
+                     
+        }
+        else
+            document.getElementById("message").textContent = "Непредвиденная ошибка во время обращения к серверу ";
+        
+    }
+</script>
+
 </body>
 </html>
