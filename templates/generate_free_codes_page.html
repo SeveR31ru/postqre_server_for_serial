@@ -16,53 +16,68 @@
     <form action="/" method="get" target=_self>
         <input type="submit" class="input_button" value="Вернуться на главную страницу">     
     </form> 
-    <h3>Создать новое устройство</h3>
+    <h3>Создать новый шаблон устройства</h3>
     <h5>
-        <p>Создать новое устройство и сделать его первый код в базе с номером "префикс_1" </p>
+        <p>Создать новый шаблон устройства с префиксом и описанием и сделать его первый код в базе с номером "префикс_1" </p>
     </h5>
-        <input type="text" id=create_device placeholder="Введите название нашего устройства" required size="30" >
+        <input type="text" id=create_template placeholder="Введите название нашего устройства" required size="30" >
         <p></p>
-        <input type="text" id="create_prefix" placeholder="выберите префикс"required maxlength="4" size="15">
+        <input type="text" id="create_prefix" placeholder="Выберите префикс"required maxlength="4" size="15">
         <p></p>
-        <input type="text"id="create_description" placeholder="выберите описание" size="15">
+        <input type="text"id="create_description" placeholder="Выберите описание" size="15">
         <p></p>
-        <button onclick="send('create')">Создать</button>        
+        <button onclick="send('create')">Создать новый шаблон</button>        
     <p></p>
-    
-    <h3>Изменить префикс и описание имеющихся устройств</h3>
+    <h3>Изменить префикс и описание имеющегося шаблона</h3>
     <h5>
-        <p>Выберите устройство, которое хотите изменить. </p>
+        <p>Выберите шаблон, которое хотите изменить. </p>
         <p>Если вы желаете изменить только один параметр-оставьте второе поле пустым</p>
     </h5>
-        <input list="device_list" name="change_device" placeholder="Выберите имеющееся устройство"name=change_device required size="30" >
-        <datalist id="device_list">
+        <input type="text" list="templates_list" id="change_template" placeholder="Выберите имеющийся шаблон"name=change_template required size="30" >
+        <datalist id="templates_list">
             <option value="">Выберите устройство, которому хотите изменить префикс(не больше 4 символов) и описание</option>
-            {% for device in device_list %}
-            <option value="{{code}}"></option>
+            {% for template in templates_list %}
+            <option value="{{template}}"></option>
             {% endfor %}
         </datalist>
         <p></p>
-        <input type="text" id="change_prefix" placeholder="выберите префикс"required maxlength="4" size="15">
+        <input type="text" id="change_prefix" placeholder="Выберите префикс"required maxlength="4" size="15">
         <p></p>
-        <input type="text",id="change_description" placeholder="выберите описание"required maxlength="4" size="15">
+        <input type="text" id="change_description" placeholder="Выберите описание"required size="15">
         <p></p>
-        <button onclick="send('change')">Изменить устройство</button>     
+        <button onclick="send('change')">Изменить выбранный шаблон</button>        
+    <p></p>
+    <h5>
+        <p>Создать выбранное количество кодов для заданного шаблона </p>
+    </h5>
+        <input type="text" list="templates_list" id="choosed_template" placeholder="Выберите имеющийся шаблон" required size="30" >
+        <datalist id="templates_list">
+            <option value="">Выберите устройство,дл которого хотите создать коды</option>
+            {% for template in templates_list %}
+            <option value="{{template}}"></option>
+            {% endfor %}
+        </datalist>
+        <p></p>
+        <input type="text" id="count" placeholder="Напишите количество кодов"required size="15">
+        <p></p>
+        <button onclick="create()">Создать коды</button>        
     <p></p>
     
     <h3>Системные сообщения</h3>
     <div id="message"></div>
-        
+
 <script>
         async function send(choosed_func)
         {   
-            const device=document.getElementById(choosed_func+"_device").value;
+            const func = "/"+choosed_func+"_template";
+            const template=document.getElementById(choosed_func+"_template").value;
             const prefix=document.getElementById(choosed_func+"_prefix").value;
             const description=document.getElementById(choosed_func+"_description").value;
-            const response = await fetch("/"+choosed_func+"_device", {
+            const response = await fetch(func, {
                 method: "POST",
                 headers: { "Accept": "application/json", "Content-Type": "application/json" },
                 body: JSON.stringify({ 
-                    device: device,
+                    template: template,
                     prefix: prefix,
                     description:description,
                 })
@@ -73,15 +88,48 @@
                          
             }
             else
-                console.log(response);
+                document.getElementById("message").textContent = "Непредвиденная ошибка во время обращения к серверу ";
             
             
         }
 
-
+</script>
+<script>
+    async function create()
+    {   
+        const template=document.getElementById("choosed_template").value;
+        const count=document.getElementById("count").value;
+        const response = await fetch("/generate_codes", {
+            method: "POST",
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                template: template,
+                count:count
+            })
+        });
+        if (response.ok) {
+            const ans_data=await response.json()
+            document.getElementById("message").textContent = ans_data.message;
+                     
+        }
+        else
+            document.getElementById("message").textContent = "Непредвиденная ошибка во время обращения к серверу ";
+        
+    }
 
 </script>
 
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+

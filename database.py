@@ -65,9 +65,9 @@ def insert_codes_in_bd(data:bytes):
      
 
 
-def create_device(device:str,description:str=None,prefix:str=None):
+def create_template(template:str,description:str=None,prefix:str=None):
     """
-    Функция создания нового девайса. Первое созданное новое устройство будет вставлено в таблицу автоматически
+    Функция создания нового шаблона. Первое созданное новое устройство будет вставлено в таблицу автоматически
     device-название девайса
     description- описание
     prefix-префикс
@@ -99,7 +99,7 @@ def create_device(device:str,description:str=None,prefix:str=None):
         cursor=conn.cursor()
     except:
         return "Не удалось подключиться к базе"
-    data=[device]
+    data=[template]
     cursor.execute(query_check_device,data)
     if len(cursor.fetchall())!=0:
             return "Девайс с таким именем уже имеется. Отмена операции"
@@ -110,13 +110,13 @@ def create_device(device:str,description:str=None,prefix:str=None):
     
     if prefix is None:
         selected_query=query_create_device_description
-        data=[device,description]
+        data=[template,description]
     elif description is None:
         selected_query=query_create_device_prefix
-        data=[device,prefix]
+        data=[template,prefix]
     else:
         selected_query=query_create_device_full
-        data=[device,description,prefix]
+        data=[template,description,prefix]
     
     try:
         cursor.execute(selected_query,data)
@@ -124,79 +124,80 @@ def create_device(device:str,description:str=None,prefix:str=None):
         return "Непредвиденная ошибка во время создания записи в таблице префиксов, отмена операции"
     
     try:
-        code_data=[device,prefix+"_1",'0']
+        code_data=[template,prefix+"_1",'0']
         cursor.execute(query_create_first_code,code_data)
     except:
         return "Непредвиденная ошибка при создании первого кода, отмена операции"
     conn.commit()
     cursor.close()
     conn.close()
-    return f"Устройство с именем {device} \n \
-        префиксом : {prefix}\n \
-        описанием: {description} \n \
+    return f"Устройство с именем:{template} \n \
+        префиксом:{prefix}\n \
+        описанием:{description} \n \
         успешно создано и первый код сгенерирован"
 
 
 
 
 
-def change_device(device:str,prefix:str=None,description:str=None):
+def change_template(template:str,prefix:str=None,description:str=None):
     """
     Функция изменения описания и префикса имеющегося девайса
     аргументы:
-    device-название девайса
+    template- название шаблона 
     prefix-желаемый префикс
     description-желаемое описание
     @return:
     str-строка ошибки либо строка успеха операции
     """
-    query_change_device_full=f"Insert into prefixes  \
-            (name,description,prefix)\
-            Values (%s,%s,%s)"
-    query_change_device_prefix=f"Insert into prefixes  \
-            (name,description,prefix)\
-            Values (%s,%s,%s)"
-    query_change_device_description=f"Insert into prefixes  \
-            (name,description,prefix)\
-            Values (%s,%s,%s)"
+    query_change_template_full=f"Update prefixes \
+        SET prefix=%s,description=%s where name=%s"
+    query_change_template_prefix=f"Update prefixes \
+        SET prefix=%s where name=%s"
+    query_change_template_description=f"Update prefixes \
+        SET description=%s where name=%s"
     try:
         conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
         cursor=conn.cursor()
     except:
         return "Не удалось подключиться к базе"
     if prefix is None:
-        query=query_change_device_description
-        data=(name,description)
+        query=query_change_template_description
+        data=(description,template)
     elif description is None:
-        query=query_change_device_prefix
-        data=(name,prefix)
+        query=query_change_template_prefix
+        data=(prefix,template)
     else:
-        query=query_change_device_full
-        data=(name,prefix,description)
+        query=query_change_template_full
+        data=(prefix,description,template)
     try:
         cursor.execute(query,data)
     except:
-        return "Непредвиденная ошибка во время изменения, отмена операции"
+        return "Непредвиденная ошибка во время изменения, отмена операции. Вероятнее всего было найдено неуникальное значение в столбце имен или префиксов"
     conn.commit()
     cursor.close()
     conn.close()
-    return f"Девайс с именем {name} успешно изменен /n \
-        Префикс изменен на: {prefix}\
-        Описание изменено на: {description}"
+    return f"Шаблон с именем:{template} успешно изменен \n \
+        Префикс изменен на:{prefix}\
+        Описание изменено на:{description}"
 
      
-def generate_free_codes(name:str,count:int):
+def generate_free_codes(template:str,count:int):
     """
-    Функция, добавляющая n-е количество незанятых кодов
-    в БД в выбранную таблицу(printed=0)
+   Функция, которая генерирует n-ое количество новых кодов для выбранного шаблона
+   аргументы:
+   @template- имя выбранного шаблона
+   @count-количество необходимых кодов
+   return:
+   строка о выполнении или невыполнении операции
+
     """
     query_get_last_row=f"SELECT * \
-    FROM {name} \
-        ORDER BY id DESC, \
-        id DESC \
+    FROM passports WHERE name=%s \
+        ORDER BY id DESC \
         LIMIT 1;"
     query_insert_new_code=f"\
-        INSERT INTO {name}\
+        INSERT INTO passports\
         (name,serial,printed)\
         VALUES(%s,%s,%s)"
     try:
@@ -205,7 +206,7 @@ def generate_free_codes(name:str,count:int):
     except:
         return "Не удалось подключиться к базе"
     try:
-        cursor.execute(query_get_last_row)
+        cursor.execute(query_get_last_row,(template,))
     except:
         return "Не удалось получить последний имеющийся код устройства"    
     last_row=cursor.fetchone()
@@ -217,22 +218,42 @@ def generate_free_codes(name:str,count:int):
     try:
         for i in range(1,count+1):
             current_code_number=str(last_row_code_number+i)
-            target_insert=(name,last_row_code_prefix+"_"+current_code_number,0)
+            target_insert=(template,last_row_code_prefix+"_"+current_code_number,0)
             cursor.execute(query_insert_new_code,target_insert)
     except:
         return "Ошибка во время вставки новых кодов"
     conn.commit()
     cursor.close()
     conn.close()     
-    return f"Для устройства {name} успешно создано {count} кодов"
+    return f"Для шаблона устройства {template} успешно создано {count} кодов"
 
 def get_all_passports():
     """
     Функция, которая всю таблицу паспортов кортежем из строк
     """
-    query_get_all_codes=f"SELECT * FROM passports"
+    query_get_all_passports=f"SELECT * FROM passports"
     conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
     cursor=conn.cursor()
-    cursor.execute(query_get_all_codes)
+    cursor.execute(query_get_all_passports)
     data=cursor.fetchall()
     return data
+
+def get_all_templates_names():
+    """
+    Функция,возвращающая все имена шаблонов устройств
+    
+    """
+    query_get_names=f"SELECT name FROM prefixes"
+    conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
+    cursor=conn.cursor()
+    cursor.execute(query_get_names)
+    data=cursor.fetchall()
+    result=[]
+    for row in data:
+        result.append(row[0])
+    return result
+
+
+
+
+

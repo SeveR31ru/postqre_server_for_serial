@@ -11,10 +11,7 @@ import database
 import pandas
 import json
 
-class Device(BaseModel):
-    name:str
-    prefix:str|None=None
-    description:str|None=None
+
 try:
     # получение конфигов
     config = configparser.ConfigParser()
@@ -49,7 +46,8 @@ def insert_page():
 @app.get("/generate_free_codes_page")
 def get_page():
     html=env.get_template("generate_free_codes_page.html")
-    html=html.render()
+    templates_list=database.get_all_templates_names()
+    html=html.render(templates_list=templates_list)
     return HTMLResponse(html)
 
 @app.get("/table_of_passports")
@@ -62,33 +60,51 @@ def get_table_of_passports():
 
 #post-запросы
 
-@app.post("/create_device")
-async def create_device(data=Body()):
-    print(data)
-    device=data["device"]
+@app.post("/create_template")
+async def create_template(data=Body()):
+    template=data["template"]
     prefix=data["prefix"]
     description=data["description"]
+    if not template:
+        return {"message":"Введите имя шаблона"}  
+    if template and not prefix:
+        return {"message": "Введите префикс"}
     if not prefix:
-        text=database.create_device(device=device,description=description)
+        text=database.create_template(template=template,description=description)
     elif not description:
-        text=database.create_device(device=device,prefix=prefix)
+        text=database.create_template(template=template,prefix=prefix)
     else:
-        text=database.create_device(device=device,description=description,prefix=prefix)
+        text=database.create_template(template=template,description=description,prefix=prefix)
     return {"message": text}
 
 
-@app.post("/change_device")
-def change_device(data=Body()):
-    device=str(data["device"])
-    prefix=str(data["prefix"])
-    description=str(data["description"])
+@app.post("/change_template")
+async def change_template(data=Body()):
+    template=data["template"]
+    prefix=data["prefix"]
+    description=data["description"]
+    if not template:
+        return {"message":"Введите имя шаблона"}
+    if not prefix and not description:
+        return {"message":"Введите хотя бы один параметр для изменения"}
     if not prefix:
-        text=database.change_device(device=device,description=description)
+        text=database.change_template(template=template,description=description)
     elif not description:
-        text=database.change_device(device=device,prefix=prefix)
+        text=database.change_template(template=template,prefix=prefix)
     else:
-        text=database.change_device(device=device,description=description,prefix=prefix)
+        text=database.change_template(template=template,description=description,prefix=prefix)
     return {"message": text}
+
+@app.post("/generate_codes")
+async def generate_codes(data=Body()):
+    template=str(data["template"])
+    count=data["count"]
+    if not template:
+        return {"message":"Введите имя шаблона"}
+    if not count:
+        return {"message":"Введите количество кодов"}
+    text=database.generate_free_codes(template, int(count))
+    return  {"message": text}
     
 
 
